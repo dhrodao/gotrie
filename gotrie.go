@@ -1,16 +1,18 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"unicode/utf8"
+)
 
 // Structure which represents a node from the trie data structure
 type Node struct {
 	// Value of the current node
-	Char byte
+	Value rune
 	// Whether the current node is a leaf
 	IsLeaf bool
 	// Children of the current node
-	// Size is 128 because there are 128 ASCII characters
-	Children [128]*Node
+	Children map[rune]*Node
 }
 
 // Structure which represents a trie
@@ -19,12 +21,10 @@ type Trie struct {
 }
 
 // This function creates a new node
-func NewNode(char byte) *Node {
-	node := &Node{Char: char}
+func NewNode(value rune) *Node {
+	node := &Node{Value: value}
 
-	for i := 0; i < 128; i++ {
-		node.Children[i] = nil
-	}
+	node.Children = make(map[rune]*Node)
 
 	return node
 }
@@ -35,44 +35,58 @@ func NewTrie() *Trie {
 }
 
 // This function inserts a word into the trie
-func (t *Trie) Insert(word string) {
+func (t *Trie) Insert(s string) {
 	current := t.Root
 
-	for i := 0; i < len(word); i++ {
-		char := word[i]
-		if current.Children[char] == nil {
-			current.Children[char] = NewNode(char)
+	// for k, v := range s {
+	// 	char := s[i]
+	// 	if current.Children[char] == nil {
+	// 		current.Children[char] = NewNode(char)
+	// 	}
+	// 	current = current.Children[char]
+	// }
+
+	for i, w := 0, 0; i < len(s); i += w {
+		runeValue, width := utf8.DecodeRuneInString(s[i:])
+		if current.Children[runeValue] == nil {
+			current.Children[runeValue] = NewNode(runeValue)
 		}
-		current = current.Children[char]
+
+		current = current.Children[runeValue]
+		w = width
 	}
 
 	current.IsLeaf = true
 }
 
-func (t *Trie) Delete(word string) {
+func (t *Trie) Delete(s string) {
 	current := t.Root
 
-	for i := 0; i < len(word); i++ {
-		char := word[i]
-		if current == nil || current.Children[char] == nil {
+	for i, w := 0, 0; i < len(s); i += w {
+		runeValue, width := utf8.DecodeRuneInString(s[i:])
+		if current == nil || current.Children[runeValue] == nil {
 			return
 		}
-		current = current.Children[char]
+
+		current = current.Children[runeValue]
+		w = width
 	}
 
 	current.IsLeaf = false
 }
 
 // This function searches for a word in the trie
-func (t *Trie) Search(word string) bool {
+func (t *Trie) Search(s string) bool {
 	current := t.Root
 
-	for i := 0; i < len(word); i++ {
-		char := word[i]
-		if current == nil || current.Children[char] == nil {
+	for i, w := 0, 0; i < len(s); i += w {
+		runeValue, width := utf8.DecodeRuneInString(s[i:])
+		if current == nil || current.Children[runeValue] == nil {
 			return false
 		}
-		current = current.Children[char]
+
+		current = current.Children[runeValue]
+		w = width
 	}
 
 	return current.IsLeaf
@@ -97,4 +111,8 @@ func main() {
 	fmt.Printf("%s: %v\n", word, trie.Search(word))
 	word = "dhrodao@example."
 	fmt.Printf("%s: %v\n", word, trie.Search(word))
+
+	const r = "สวัสดี"
+	trie.Insert(r)
+	fmt.Printf("%s: %v\n", r, trie.Search(r))
 }
